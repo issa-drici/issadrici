@@ -1,0 +1,4 @@
+/* Réduire l'opacité des labels dans les Infolists */
+.fi-infolist-entry-label {
+    opacity: 0.6;
+}

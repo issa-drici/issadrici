@@ -1,0 +1,74 @@
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: crm-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - crm-network
+      - traefik-network
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE:-crm_forfait}
+      - DB_USERNAME=${DB_USERNAME:-crm_user}
+      - DB_PASSWORD=${DB_PASSWORD:-crm_password}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-network"
+      - "traefik.http.routers.crm.rule=Host(`crm.localhost`)"
+      - "traefik.http.routers.crm.entrypoints=web"
+      - "traefik.http.services.crm.loadbalancer.server.port=8000"
+      - "traefik.http.routers.crm.middlewares=crm-headers"
+      - "traefik.http.middlewares.crm-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
+      - "traefik.http.middlewares.crm-headers.headers.customrequestheaders.X-Forwarded-Host=crm.localhost"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: crm-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${DB_DATABASE:-crm_forfait}
+      - POSTGRES_USER=${DB_USERNAME:-crm_user}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-crm_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - crm-network
+    ports:
+      - "${POSTGRES_PORT:-15432}:5432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: crm-redis
+    restart: unless-stopped
+    networks:
+      - crm-network
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  crm-network:
+    driver: bridge
+  traefik:
+    external: true
+    name: traefik-network
