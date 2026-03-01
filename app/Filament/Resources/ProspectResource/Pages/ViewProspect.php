@@ -64,13 +64,13 @@ class ViewProspect extends ViewRecord
                     ->form([
                         Forms\Components\Select::make('preparation_message_id')
                             ->label('Message préparé utilisé')
-                            ->relationship(
-                                'preparationsMessages',
-                                'angle_choisi',
-                                fn ($query) => $query->where('statut', 'en_preparation')
-                            )
-                            ->getOptionLabelFromRecordUsing(fn ($record) => ($record->angle_choisi ?? 'Sans angle') . ($record->message ? ' (' . \Illuminate\Support\Str::limit($record->message, 30) . '...)' : ''))
-                            ->searchable(['angle_choisi', 'message'])
+                            ->options(function () {
+                                $prospect = $this->record;
+                                return $prospect->preparationsMessages()
+                                    ->where('statut', 'en_preparation')
+                                    ->get()
+                                    ->mapWithKeys(fn ($p) => [$p->id => ($p->angle_choisi ?? 'Sans angle') . ($p->message ? ' (' . \Illuminate\Support\Str::limit($p->message, 30) . '...)' : '')]);
+                            })
                             ->placeholder('Aucun — message libre')
                             ->helperText('Optionnel : sélectionnez un message préparé si vous en avez utilisé un')
                             ->nullable()
