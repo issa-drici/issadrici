@@ -64,11 +64,16 @@ class ViewProspect extends ViewRecord
                     ->form([
                         Forms\Components\Select::make('preparation_message_id')
                             ->label('Message préparé utilisé')
-                            ->relationship('preparationsMessages', 'angle_choisi', fn ($query) => $query->where('statut', 'en_preparation'))
+                            ->relationship(
+                                'preparationsMessages',
+                                'angle_choisi',
+                                fn ($query) => $query->where('statut', 'en_preparation')
+                            )
                             ->getOptionLabelFromRecordUsing(fn ($record) => ($record->angle_choisi ?? 'Sans angle') . ($record->message ? ' (' . \Illuminate\Support\Str::limit($record->message, 30) . '...)' : ''))
                             ->searchable(['angle_choisi', 'message'])
-                            ->helperText('Sélectionnez le message préparé que vous avez envoyé')
-                            ->required()
+                            ->placeholder('Aucun — message libre')
+                            ->helperText('Optionnel : sélectionnez un message préparé si vous en avez utilisé un')
+                            ->nullable()
                             ->reactive()
                             ->afterStateUpdated(function ($state, callable $set) {
                                 if ($state) {
@@ -90,7 +95,7 @@ class ViewProspect extends ViewRecord
                         Forms\Components\TextInput::make('resume')
                             ->label('Résumé')
                             ->maxLength(255)
-                            ->helperText('Résumé court du message envoyé'),
+                            ->helperText('Résumé court du message envoyé (optionnel)'),
                         Forms\Components\Textarea::make('notes')
                             ->label('Notes')
                             ->rows(3)
@@ -98,7 +103,6 @@ class ViewProspect extends ViewRecord
                             ->columnSpanFull(),
                     ])
                     ->action(function (Prospect $record, array $data) {
-                        // Créer l'interaction
                         $record->interactions()->create([
                             'type' => $data['type'],
                             'date' => now(),
@@ -106,60 +110,21 @@ class ViewProspect extends ViewRecord
                             'resume' => $data['resume'] ?? null,
                             'notes' => $data['notes'] ?? null,
                         ]);
-                        
-                        // Marquer le message préparé comme utilisé
-                        if (isset($data['preparation_message_id'])) {
+
+                        if (! empty($data['preparation_message_id'])) {
                             $preparation = $record->preparationsMessages()->find($data['preparation_message_id']);
                             if ($preparation) {
                                 $preparation->update(['statut' => 'utilise']);
                             }
                         }
-                        
-                        // Mettre à jour le prospect
+
                         $record->update([
                             'statut' => 'contacte',
                             'prochaine_action' => 'Attendre réponse',
                             'date_prochaine_action' => now()->addDays(3),
                         ]);
                     })
-                    ->visible(fn (Prospect $record) => $record->preparationsMessages()->where('statut', 'en_preparation')->exists()),
-                Actions\Action::make('marquer_message_envoye_simple')
-                    ->label('Message envoyé (sans préparation)')
-                    ->icon('heroicon-o-paper-airplane')
-                    ->form([
-                        Forms\Components\Select::make('type')
-                            ->label('Type de message')
-                            ->options([
-                                'linkedin_message' => 'LinkedIn - Message',
-                                'email' => 'Email',
-                            ])
-                            ->required()
-                            ->default(fn (Prospect $record) => $record->canal_principal === 'linkedin' ? 'linkedin_message' : 'email'),
-                        Forms\Components\TextInput::make('resume')
-                            ->label('Résumé')
-                            ->maxLength(255)
-                            ->helperText('Résumé court du message envoyé'),
-                        Forms\Components\Textarea::make('notes')
-                            ->label('Notes')
-                            ->rows(3)
-                            ->helperText('Notes complémentaires sur le message envoyé (optionnel)')
-                            ->columnSpanFull(),
-                    ])
-                    ->action(function (Prospect $record, array $data) {
-                        $record->interactions()->create([
-                            'type' => $data['type'],
-                            'date' => now(),
-                            'statut' => 'envoye',
-                            'resume' => $data['resume'] ?? null,
-                            'notes' => $data['notes'] ?? null,
-                        ]);
-                        $record->update([
-                            'statut' => 'contacte',
-                            'prochaine_action' => 'Attendre réponse',
-                            'date_prochaine_action' => now()->addDays(3),
-                        ]);
-                    })
-                    ->visible(fn (Prospect $record) => !$record->preparationsMessages()->where('statut', 'en_preparation')->exists()),
+                    ->successNotificationTitle('Message envoyé enregistré'),
                 Actions\Action::make('enregistrer_reponse')
                     ->label('Réponse reçue')
                     ->icon('heroicon-o-chat-bubble-left-right')
