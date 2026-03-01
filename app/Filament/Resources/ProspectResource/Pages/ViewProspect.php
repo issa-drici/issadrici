@@ -69,7 +69,7 @@ class ViewProspect extends ViewRecord
                                 return $prospect->preparationsMessages()
                                     ->where('statut', 'en_preparation')
                                     ->get()
-                                    ->mapWithKeys(fn ($p) => [$p->id => ($p->angle_choisi ?? 'Sans angle') . ($p->message ? ' (' . \Illuminate\Support\Str::limit($p->message, 30) . '...)' : '')]);
+                                    ->mapWithKeys(fn($p) => [$p->id => ($p->angle_choisi ?? 'Sans angle') . ($p->message ? ' (' . \Illuminate\Support\Str::limit($p->message, 30) . '...)' : '')]);
                             })
                             ->placeholder('Aucun — message libre')
                             ->helperText('Optionnel : sélectionnez un message préparé si vous en avez utilisé un')
@@ -91,7 +91,7 @@ class ViewProspect extends ViewRecord
                                 'email' => 'Email',
                             ])
                             ->required()
-                            ->default(fn (Prospect $record) => $record->canal_principal === 'linkedin' ? 'linkedin_message' : 'email'),
+                            ->default(fn(Prospect $record) => $record->canal_principal === 'linkedin' ? 'linkedin_message' : 'email'),
                         Forms\Components\TextInput::make('resume')
                             ->label('Résumé')
                             ->maxLength(255)
@@ -160,7 +160,7 @@ class ViewProspect extends ViewRecord
                             'notes' => $data['notes'] ?? null,
                             'resume' => 'Réponse reçue - ' . ucfirst($data['resultat']),
                         ]);
-                        
+
                         // Mettre à jour le prospect
                         $record->update([
                             'statut' => 'en_discussion',
@@ -196,7 +196,7 @@ class ViewProspect extends ViewRecord
                         $datePlanifiee = is_string($data['date_planifiee'])
                             ? \Carbon\Carbon::parse($data['date_planifiee'])
                             : $data['date_planifiee'];
-                        
+
                         $record->calls()->create([
                             'date_planifiee' => $datePlanifiee,
                             'objectif_call' => $data['objectif_call'],
@@ -306,7 +306,7 @@ class ViewProspect extends ViewRecord
                             'date_envoi' => now(),
                             'statut' => 'envoyee',
                         ]);
-                        
+
                         // Mettre à jour le prospect
                         $record->update([
                             'statut' => 'proposition_envoyee',
@@ -315,7 +315,7 @@ class ViewProspect extends ViewRecord
                             'prochaine_action' => 'Suivre proposition',
                             'date_prochaine_action' => now()->addDays(5),
                         ]);
-                        
+
                         // Créer ou mettre à jour une opportunité
                         $opportunite = $record->opportunites()->firstOrNew();
                         $opportunite->stade = 'proposition';
@@ -348,7 +348,7 @@ class ViewProspect extends ViewRecord
                             'statut' => 'gagne',
                             'montant_gagne' => $data['montant_gagne'],
                         ]);
-                        
+
                         // Créer ou mettre à jour une opportunité
                         $opportunite = $record->opportunites()->firstOrNew();
                         $opportunite->stade = 'gagne';
@@ -382,7 +382,7 @@ class ViewProspect extends ViewRecord
                             'statut' => 'perdu',
                             'montant_perdu' => $data['montant_perdu'] ?? null,
                         ]);
-                        
+
                         // Créer ou mettre à jour une opportunité
                         $opportunite = $record->opportunites()->firstOrNew();
                         $opportunite->stade = 'perdu';
@@ -404,14 +404,14 @@ class ViewProspect extends ViewRecord
                     ->form([
                         Forms\Components\Select::make('booking_form_id')
                             ->label('Formulaire de réservation')
-                            ->options(fn () => \App\Models\BookingForm::where('actif', true)->pluck('nom', 'id'))
+                            ->options(fn() => \App\Models\BookingForm::where('actif', true)->pluck('nom', 'id'))
                             ->required()
                             ->searchable()
                             ->helperText('Sélectionnez le formulaire à utiliser pour ce lien'),
                         Forms\Components\TextInput::make('nom_lien')
                             ->label('Nom du lien')
                             ->maxLength(255)
-                            ->default(fn (Prospect $record) => "Lien pour {$record->prenom} {$record->nom}")
+                            ->default(fn(Prospect $record) => "Lien pour {$record->prenom} {$record->nom}")
                             ->helperText('Nom interne pour identifier ce lien'),
                         Forms\Components\DateTimePicker::make('date_expiration')
                             ->label('Date d\'expiration')
@@ -427,10 +427,10 @@ class ViewProspect extends ViewRecord
                     })
                     ->successNotificationTitle('Lien de réservation créé'),
             ])
-            ->label('Actions rapides')
-            ->icon('heroicon-o-bolt')
-            ->color('primary')
-            ->button(),
+                ->label('Actions rapides')
+                ->icon('heroicon-o-bolt')
+                ->color('primary')
+                ->button(),
             Actions\EditAction::make(),
         ];
     }
